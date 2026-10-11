@@ -26,8 +26,8 @@ export const Room: React.FC = () => {
       {/* Parquet subtle plank seam stripes */}
       {[-2.8, -1.4, 0, 1.4, 2.8].map((xSeam, i) => (
         <mesh key={`floor-seam-${i}`} position={[xSeam, 0.007, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-          <planeGeometry args={[0.015, 6.95]} />
-          <meshStandardMaterial color="#14111a" roughness={0.9} />
+          <planeGeometry args={[0.008, 6.95]} />
+          <meshStandardMaterial color="#191520" roughness={0.88} />
         </mesh>
       ))}
 

@@ -14,7 +14,7 @@ export const GameCanvas: React.FC = () => {
           fov: 46,
           near: 0.1,
           far: 50,
-          position: [0, 5.8, 6.2],
+          position: [0.1, 3.8, 4.6],
         }}
         gl={{
           antialias: true,

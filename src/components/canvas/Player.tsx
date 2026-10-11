@@ -15,6 +15,7 @@ export const Player: React.FC = () => {
   const coatTailsRef = useRef<THREE.Group>(null);
   const footstepTimerRef = useRef<number>(0);
   const stepTriggeredRef = useRef<boolean>(false);
+  const lookTargetRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 1.22, -1.05));
 
   // Keyboard input state
   const keysRef = useRef<{
@@ -290,26 +291,30 @@ export const Player: React.FC = () => {
       }
     }
 
-    // ================= ELEVATED ISOMETRIC ROOM CAMERA COMPOSITION =================
-    // Camera is elevated in a high 3/4 isometric perspective framing the entire room
+    // ================= CINEMATIC THREE-QUARTER ISOMETRIC CAMERA =================
+    // Moderately elevated, closer to player, framing the room's 3 key focal points
     const px = playerGroupRef.current.position.x;
     const pz = playerGroupRef.current.position.z;
 
-    const targetCamX = THREE.MathUtils.clamp(px * 0.25, -1.2, 1.2);
-    const targetCamY = 5.8;
-    const targetCamZ = THREE.MathUtils.clamp(pz * 0.25 + 6.0, 5.2, 6.8);
+    // Follow player smoothly while staying bounded within the room's cinematic envelope
+    const targetCamX = THREE.MathUtils.clamp(px * 0.45 + 0.1, -1.65, 1.65);
+    const targetCamY = 3.75;
+    const targetCamZ = THREE.MathUtils.clamp(pz * 0.42 + 4.4, 3.5, 4.9);
 
     camera.position.x = THREE.MathUtils.damp(camera.position.x, targetCamX, 3.5, delta);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, targetCamY, 3.5, delta);
     camera.position.z = THREE.MathUtils.damp(camera.position.z, targetCamZ, 3.5, delta);
 
-    // Look-at point centered in the room with subtle player follow
-    const lookTarget = new THREE.Vector3(
-      px * 0.15,
-      0.9,
-      pz * 0.15 - 0.7
-    );
-    camera.lookAt(lookTarget);
+    // Smoothly damped look-at target framing the player and room focal points
+    const desiredLookX = px * 0.42 - 0.1;
+    const desiredLookY = 1.22;
+    const desiredLookZ = pz * 0.35 - 1.05;
+
+    lookTargetRef.current.x = THREE.MathUtils.damp(lookTargetRef.current.x, desiredLookX, 4.0, delta);
+    lookTargetRef.current.y = THREE.MathUtils.damp(lookTargetRef.current.y, desiredLookY, 4.0, delta);
+    lookTargetRef.current.z = THREE.MathUtils.damp(lookTargetRef.current.z, desiredLookZ, 4.0, delta);
+
+    camera.lookAt(lookTargetRef.current);
 
     // ================= CONTEXTUAL INTERACTION PROXIMITY CHECK =================
     let closest: (typeof INTERACTABLES)[0] | null = null;

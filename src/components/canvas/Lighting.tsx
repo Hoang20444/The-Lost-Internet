@@ -84,26 +84,26 @@ export const Lighting: React.FC = () => {
       <pointLight
         position={[-1.4, 1.35, -2.0]}
         color="#00f0ff"
-        intensity={2.4}
-        distance={4.5}
+        intensity={2.6}
+        distance={4.8}
         decay={2}
       />
 
-      {/* 8. Wall Chronometer Accent Illumination */}
+      {/* 8. Wall Chronometer & Investigation Board Accent Illumination */}
       <pointLight
         position={[0.8, 2.3, -3.2]}
         color="#fef3c7"
-        intensity={1.8}
-        distance={3.8}
+        intensity={2.0}
+        distance={4.2}
         decay={2}
       />
 
-      {/* 9. SECONDARY FOCAL LIGHT: Chamber Blast Door Status Glow */}
+      {/* 9. SECONDARY FOCAL LIGHT: Chamber Blast Door Status Glow (Signals danger when locked) */}
       <pointLight
         position={[3.8, 1.8, -0.5]}
         color={doorLocked ? '#ef4444' : '#10b981'}
-        intensity={2.8}
-        distance={5.5}
+        intensity={3.2}
+        distance={5.8}
         decay={2}
       />
 
@@ -122,6 +122,15 @@ export const Lighting: React.FC = () => {
         color="#a78bfa"
         intensity={1.4}
         distance={4.0}
+        decay={2}
+      />
+
+      {/* 12. Soft Central Floor Navigation Fill: Softens deep shadows in movement corridor */}
+      <pointLight
+        position={[0, 1.5, 0.5]}
+        color="#64748b"
+        intensity={0.9}
+        distance={7.0}
         decay={2}
       />
     </>
