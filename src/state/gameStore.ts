@@ -70,6 +70,9 @@ const INITIAL_TERMINAL_LOGS = [
   ''
 ];
 
+// Module-level timestamp to debounce rapid repeated interaction events
+let lastInteractTimestamp = 0;
+
 export const useGameStore = create<GameState>((set, get) => ({
   player: {
     position: [0, 0, 0],
@@ -287,18 +290,22 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   interact: () => {
-    const { activeInteractable, activeModal, toggleLamp } = get();
-    soundManager.resume();
+    const { activeInteractable, activeModal, isPaused, toggleLamp } = get();
 
-    // If modal is open, E or Escape closes it
-    if (activeModal) {
-      set({ activeModal: null });
-      return;
-    }
+    // 1. Guard against interactions while paused or when a modal is active
+    if (isPaused || activeModal) return;
 
+    // 2. Guard against missing interactable
     if (!activeInteractable) return;
 
+    // 3. Prevent duplicate activation while an interaction is being processed (250ms cooldown)
+    const now = Date.now();
+    if (now - lastInteractTimestamp < 250) return;
+    lastInteractTimestamp = now;
+
+    soundManager.resume();
     soundManager.playInteract();
+
     switch (activeInteractable.id) {
       case 'lamp':
         toggleLamp();

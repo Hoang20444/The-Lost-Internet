@@ -64,7 +64,12 @@ export const Computer: React.FC = () => {
         {/* CRT Beveled Front Screen Frame */}
         <mesh position={[0, 0.35, 0.18]} castShadow>
           <boxGeometry args={[0.68, 0.52, 0.04]} />
-          <meshStandardMaterial color="#c2bbaa" roughness={0.55} />
+          <meshStandardMaterial
+            color="#c2bbaa"
+            roughness={0.55}
+            emissive={isTargeted ? '#00f0ff' : '#000000'}
+            emissiveIntensity={isTargeted ? 0.16 : 0}
+          />
         </mesh>
 
         {/* Curved Glass CRT Screen Surface with Phosphor Glow */}

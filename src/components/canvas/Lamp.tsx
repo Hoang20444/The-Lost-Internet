@@ -62,6 +62,8 @@ export const Lamp: React.FC = () => {
                 metalness={0.5}
                 roughness={0.4}
                 side={2}
+                emissive={isTargeted ? '#d97706' : '#000000'}
+                emissiveIntensity={isTargeted ? 0.22 : 0}
               />
             </mesh>
 

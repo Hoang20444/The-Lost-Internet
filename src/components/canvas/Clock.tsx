@@ -40,7 +40,13 @@ export const Clock: React.FC = () => {
       {/* Inner Stepped Brass Rim */}
       <mesh position={[0, 0, 0.038]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.48, 0.48, 0.02, 32]} />
-        <meshStandardMaterial color="#d97706" metalness={0.85} roughness={0.25} />
+        <meshStandardMaterial
+          color="#d97706"
+          metalness={0.85}
+          roughness={0.25}
+          emissive={isTargeted ? '#d97706' : '#000000'}
+          emissiveIntensity={isTargeted ? 0.25 : 0}
+        />
       </mesh>
 
       {/* Aged Ivory / Cream Dial Face */}

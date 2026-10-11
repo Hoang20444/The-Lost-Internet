@@ -26,7 +26,7 @@ export const App: React.FC = () => {
       const target = e.target as HTMLElement;
       const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
 
-      if (e.code === 'KeyE' && !isInput) {
+      if (e.code === 'KeyE' && !isInput && !e.repeat) {
         e.preventDefault();
         interact();
       } else if (e.code === 'Escape') {

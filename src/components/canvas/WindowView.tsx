@@ -75,9 +75,9 @@ export const WindowView: React.FC = () => {
         <meshStandardMaterial color="#141824" roughness={0.6} />
       </mesh>
 
-      {/* Glass Pane */}
-      <mesh position={[0, 0, 0]}>
-        <planeGeometry args={[0.01, 2.3]} />
+      {/* Glass Pane facing inward onto room */}
+      <mesh position={[0, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry args={[2.36, 2.3]} />
         <meshStandardMaterial
           color="#1e293b"
           roughness={0.1}
@@ -85,7 +85,7 @@ export const WindowView: React.FC = () => {
           transparent
           opacity={0.35}
           emissive={isTargeted ? '#38bdf8' : '#000000'}
-          emissiveIntensity={isTargeted ? 0.25 : 0}
+          emissiveIntensity={isTargeted ? 0.22 : 0}
         />
       </mesh>
 
