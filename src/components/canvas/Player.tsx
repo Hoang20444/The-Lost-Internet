@@ -235,24 +235,24 @@ export const Player: React.FC = () => {
       }
     }
 
-    // ================= ART-DIRECTED CINEMATIC CAMERA COMPOSITION =================
-    // Camera is elevated in a cinematic 3/4 isometric perspective framing the workstation, door, and player
+    // ================= ELEVATED ISOMETRIC ROOM CAMERA COMPOSITION =================
+    // Camera is elevated in a high 3/4 isometric perspective framing the entire room
     const px = playerGroupRef.current.position.x;
     const pz = playerGroupRef.current.position.z;
 
-    const targetCamX = THREE.MathUtils.clamp(px * 0.45 + 0.2, -1.5, 1.5);
-    const targetCamY = 3.1;
-    const targetCamZ = THREE.MathUtils.clamp(pz * 0.4 + 4.1, 2.6, 4.8);
+    const targetCamX = THREE.MathUtils.clamp(px * 0.25, -1.2, 1.2);
+    const targetCamY = 5.8;
+    const targetCamZ = THREE.MathUtils.clamp(pz * 0.25 + 6.0, 5.2, 6.8);
 
     camera.position.x = THREE.MathUtils.damp(camera.position.x, targetCamX, 3.5, delta);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, targetCamY, 3.5, delta);
     camera.position.z = THREE.MathUtils.damp(camera.position.z, targetCamZ, 3.5, delta);
 
-    // Look at point that keeps the workstation & player centered
+    // Look-at point centered in the room with subtle player follow
     const lookTarget = new THREE.Vector3(
-      px * 0.35 - 0.25,
-      1.0,
-      pz * 0.35 - 1.3
+      px * 0.15,
+      0.9,
+      pz * 0.15 - 0.7
     );
     camera.lookAt(lookTarget);
 

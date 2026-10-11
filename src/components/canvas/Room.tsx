@@ -419,8 +419,8 @@ export const Room: React.FC = () => {
       </mesh>
 
       {/* ================= CEILING RAFTERS (High up, atmospheric) ================= */}
-      {[-2.2, 0, 2.2].map((z, idx) => (
-        <mesh key={`beam-${idx}`} position={[0, 4.1, z]} castShadow={false}>
+      {[-2.4, -0.6].map((z, idx) => (
+        <mesh key={`beam-${idx}`} position={[0, 4.3, z]} castShadow={false}>
           <boxGeometry args={[8.6, 0.2, 0.3]} />
           <meshStandardMaterial color="#202636" roughness={0.75} />
         </mesh>

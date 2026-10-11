@@ -11,10 +11,10 @@ export const GameCanvas: React.FC = () => {
       <Canvas
         shadows={shadowsEnabled}
         camera={{
-          fov: 48,
+          fov: 46,
           near: 0.1,
           far: 50,
-          position: [0.2, 3.1, 4.2],
+          position: [0, 5.8, 6.2],
         }}
         gl={{
           antialias: true,
