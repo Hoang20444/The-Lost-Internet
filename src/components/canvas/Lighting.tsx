@@ -8,46 +8,44 @@ export const Lighting: React.FC = () => {
 
   return (
     <>
-      {/* Rich indie atmospheric hemisphere light (Sky cyan / Ground indigo) */}
-      <hemisphereLight args={['#bae6fd', '#1e1b4b', 1.4]} />
+      {/* 1. Cool Subdued Ambient & Hemisphere Fill: Preserves readability on laptop screens */}
+      <hemisphereLight args={['#7dd3fc', '#1e1b4b', 1.35]} />
+      <ambientLight color="#94a3b8" intensity={0.9} />
 
-      {/* Atmospheric ambient base */}
-      <ambientLight color="#94a3b8" intensity={0.8} />
-
-      {/* Main room ceiling key light casting soft shadows */}
+      {/* 2. Soft Ceiling Key Light for Architectural Room Depth & Soft Contact Shadows */}
       <directionalLight
-        position={[2, 7, 3]}
+        position={[2.0, 7.0, 2.5]}
         color="#e0e7ff"
-        intensity={1.5}
+        intensity={1.4}
         castShadow={shadowsEnabled}
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
         shadow-camera-near={0.5}
-        shadow-camera-far={25}
-        shadow-camera-left={-7}
-        shadow-camera-right={7}
-        shadow-camera-top={7}
-        shadow-camera-bottom={-7}
-        shadow-bias={-0.0005}
+        shadow-camera-far={20}
+        shadow-camera-left={-6}
+        shadow-camera-right={6}
+        shadow-camera-top={6}
+        shadow-camera-bottom={-6}
+        shadow-bias={-0.0003}
       />
 
-      {/* Moonlight streaming in from the West window */}
+      {/* 3. North Wall Architectural Wash: Ensures blueprint board, clock, and wainscoting are readable */}
       <pointLight
-        position={[-4.7, 2.2, 0]}
-        color="#38bdf8"
-        intensity={2.8}
-        distance={10}
+        position={[-0.5, 3.0, -2.6]}
+        color="#93c5fd"
+        intensity={1.5}
+        distance={6.5}
         decay={2}
       />
 
-      {/* Desk Workstation Area Light: Dynamic based on Lamp switch */}
+      {/* 4. PRIMARY LOCAL LIGHT: Warm Amber Desk Lamp */}
       {lampOn && (
         <>
           <pointLight
-            position={[-2.4, 2.0, -3.0]}
+            position={[-0.9, 1.8, -2.1]}
             color="#fed7aa"
-            intensity={4.5}
-            distance={8.5}
+            intensity={5.2}
+            distance={8.0}
             decay={2}
             castShadow={shadowsEnabled}
             shadow-mapSize-width={512}
@@ -55,48 +53,57 @@ export const Lighting: React.FC = () => {
             shadow-bias={-0.001}
           />
           <pointLight
-            position={[-1.75, 1.7, -3.0]}
-            color="#ffedd5"
-            intensity={3.0}
+            position={[-0.45, 1.5, -2.1]}
+            color="#fef3c7"
+            intensity={2.8}
             distance={4.5}
             decay={2}
           />
         </>
       )}
 
-      {/* CRT Terminal Screen ambient glow */}
+      {/* 5. CRT Phosphor Screen Cyan Illumination (Active even when lamp is off) */}
       <pointLight
-        position={[-2.8, 1.45, -2.7]}
+        position={[-1.4, 1.35, -2.0]}
         color="#00f0ff"
-        intensity={2.2}
-        distance={4.5}
-        decay={2}
-      />
-
-      {/* Wall Chronometer Clock dedicated accent illumination */}
-      <pointLight
-        position={[-0.2, 2.5, -4.3]}
-        color="#f1f5f9"
-        intensity={2.0}
-        distance={4.5}
-        decay={2}
-      />
-
-      {/* Blast Door security illumination */}
-      <pointLight
-        position={[4.2, 2.0, 0]}
-        color={doorLocked ? '#ff1e56' : '#10b981'}
         intensity={2.4}
-        distance={5.0}
+        distance={4.5}
         decay={2}
       />
 
-      {/* Server rack archival equipment illumination */}
+      {/* 6. Wall Chronometer Accent Illumination */}
       <pointLight
-        position={[3.4, 2.0, -3.0]}
-        color="#a78bfa"
+        position={[0.8, 2.3, -3.2]}
+        color="#fef3c7"
         intensity={1.8}
-        distance={5.0}
+        distance={3.8}
+        decay={2}
+      />
+
+      {/* 7. SECONDARY FOCAL LIGHT: Chamber Blast Door Status Glow */}
+      <pointLight
+        position={[3.8, 1.8, -0.5]}
+        color={doorLocked ? '#ef4444' : '#10b981'}
+        intensity={2.8}
+        distance={5.5}
+        decay={2}
+      />
+
+      {/* 8. Rainy Window Cyan Moonlight Fill */}
+      <pointLight
+        position={[-4.0, 2.0, -0.5]}
+        color="#38bdf8"
+        intensity={2.4}
+        distance={7.5}
+        decay={2}
+      />
+
+      {/* 9. Server Rack Subtle Diagnostic Glow */}
+      <pointLight
+        position={[2.6, 1.8, -2.7]}
+        color="#a78bfa"
+        intensity={1.4}
+        distance={4.0}
         decay={2}
       />
     </>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useGameStore } from '../../state/gameStore';
-import { Volume2, VolumeX, Pause, CheckCircle2, Circle } from 'lucide-react';
+import { Volume2, VolumeX } from 'lucide-react';
 
 export const HUD: React.FC = () => {
   const isPaused = useGameStore((state) => state.isPaused);
@@ -15,71 +15,76 @@ export const HUD: React.FC = () => {
 
   return (
     <div className="hud-overlay">
-      {/* Top Left: Title and Room badge */}
+      {/* Top Left: Discreet indie game title & archival node stamp */}
       <div className="hud-top-left">
-        <div className="hud-badge">
-          <span className="hud-glow-dot" />
-          <span className="hud-tag">ROOM 404</span>
+        <div className="hud-meta-badge">
+          <span className="meta-pulse-dot" />
+          <span className="meta-code">NODE 404</span>
+          <span className="meta-divider">//</span>
+          <span className="meta-title">OFFLINE ARCHIVE</span>
         </div>
-        <h1 className="hud-title">THE LOST INTERNET</h1>
+        <div className="hud-game-subtitle">THE LOST INTERNET</div>
       </div>
 
-      {/* Top Right: Settings & Sound quick actions */}
+      {/* Top Right: Unobtrusive system controls */}
       <div className="hud-top-right">
         <button
-          className="hud-icon-btn"
+          className="hud-subtle-btn"
           onClick={toggleSound}
           title={soundEnabled ? 'Mute Audio' : 'Unmute Audio'}
         >
-          {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
         </button>
 
         <button
-          className="hud-icon-btn"
+          className="hud-subtle-btn"
           onClick={() => setPaused(!isPaused)}
-          title="Pause / Controls Guide (ESC)"
+          title="Pause / Settings (ESC)"
         >
-          <Pause size={18} />
-          <span className="hud-btn-key">ESC</span>
+          <span className="btn-text">PAUSE</span>
+          <kbd className="hud-kbd">ESC</kbd>
         </button>
       </div>
 
-      {/* Bottom Left: Objectives Tracker */}
+      {/* Bottom Left: Compact, elegant objective tracker */}
       <div className="hud-bottom-left">
-        <div className="objective-panel">
-          <span className="objective-panel-header">PHASE 1 OBJECTIVES</span>
-          <div className="objective-list">
-            <div className={`objective-item ${inspectedLamp ? 'completed' : ''}`}>
-              {inspectedLamp ? <CheckCircle2 size={13} /> : <Circle size={13} />}
-              <span>Toggle workstation lamp</span>
+        <div className="objective-card">
+          <div className="objective-header">RECOVERY PROTOCOL</div>
+          <div className="objective-rows">
+            <div className={`objective-row ${inspectedLamp ? 'done' : ''}`}>
+              <span className={`pip ${inspectedLamp ? 'done' : ''}`} />
+              <span className="objective-text">Toggle workstation lamp</span>
             </div>
-            <div className={`objective-item ${clockSolved ? 'completed' : ''}`}>
-              {clockSolved ? <CheckCircle2 size={13} /> : <Circle size={13} />}
-              <span>Sync chronometer (04:04)</span>
+            <div className={`objective-row ${clockSolved ? 'done' : ''}`}>
+              <span className={`pip ${clockSolved ? 'done' : ''}`} />
+              <span className="objective-text">Synchronize chronometer (04:04)</span>
             </div>
-            <div className={`objective-item ${accessedTerminal ? 'completed' : ''}`}>
-              {accessedTerminal ? <CheckCircle2 size={13} /> : <Circle size={13} />}
-              <span>Access computer terminal</span>
+            <div className={`objective-row ${accessedTerminal ? 'done' : ''}`}>
+              <span className={`pip ${accessedTerminal ? 'done' : ''}`} />
+              <span className="objective-text">Access archival terminal</span>
             </div>
-            <div className={`objective-item ${!doorLocked ? 'completed' : ''}`}>
-              {!doorLocked ? <CheckCircle2 size={13} /> : <Circle size={13} />}
-              <span>Unlock chamber blast door</span>
+            <div className={`objective-row ${!doorLocked ? 'done' : ''}`}>
+              <span className={`pip ${!doorLocked ? 'done' : ''}`} />
+              <span className="objective-text">Disengage blast airlock</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Right: Controls Hint */}
+      {/* Bottom Right: Restrained keyboard guide */}
       <div className="hud-bottom-right">
-        <div className="controls-hint-bar">
-          <span className="hint-chip">
-            <kbd>WASD</kbd> Move
+        <div className="hud-nav-guide">
+          <span className="nav-item">
+            <kbd className="hud-kbd">W A S D</kbd>
+            <span className="nav-label">Move</span>
           </span>
-          <span className="hint-chip">
-            <kbd>E</kbd> Interact
+          <span className="nav-item">
+            <kbd className="hud-kbd">E</kbd>
+            <span className="nav-label">Interact</span>
           </span>
-          <span className="hint-chip">
-            <kbd>ESC</kbd> Pause
+          <span className="nav-item">
+            <kbd className="hud-kbd">ESC</kbd>
+            <span className="nav-label">Menu</span>
           </span>
         </div>
       </div>

@@ -8,8 +8,9 @@ import { INTERACTABLES, OBSTACLES } from '../../config/interactables';
 export const Player: React.FC = () => {
   const { camera } = useThree();
   const playerGroupRef = useRef<THREE.Group>(null);
-  const leftLegRef = useRef<THREE.Mesh>(null);
-  const rightLegRef = useRef<THREE.Mesh>(null);
+  const leftLegRef = useRef<THREE.Group>(null);
+  const rightLegRef = useRef<THREE.Group>(null);
+  const coatTailsRef = useRef<THREE.Mesh>(null);
   const footstepTimerRef = useRef<number>(0);
 
   // Keyboard input state
@@ -37,7 +38,6 @@ export const Player: React.FC = () => {
   // Setup keyboard event listeners
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't capture WASD if typing in terminal
       if (activeModal === 'terminal') return;
 
       switch (e.code) {
@@ -91,15 +91,18 @@ export const Player: React.FC = () => {
   }, [activeModal]);
 
   // Collision checking helper
-  const checkCollision = (x: number, z: number, playerRadius: number = 0.35): boolean => {
-    // Room perimeter walls
-    const minWall = -4.3;
-    const maxWall = 4.3;
+  const checkCollision = (x: number, z: number, playerRadius: number = 0.32): boolean => {
+    // Room perimeter walls: X [-3.8, 3.8], Z [-3.3, 3.0]
+    const minX = -3.8;
+    const maxX = 3.8;
+    const minZ = -3.3;
+    const maxZ = 3.0;
+
     if (
-      x - playerRadius < minWall ||
-      x + playerRadius > maxWall ||
-      z - playerRadius < minWall ||
-      z + playerRadius > maxWall
+      x - playerRadius < minX ||
+      x + playerRadius > maxX ||
+      z - playerRadius < minZ ||
+      z + playerRadius > maxZ
     ) {
       return true;
     }
@@ -116,9 +119,9 @@ export const Player: React.FC = () => {
       }
     }
 
-    // Door collision: if locked, block doorway on East wall
+    // Door collision: if locked, block doorway threshold on East wall
     if (doorLocked) {
-      const doorZone = { minX: 4.1, maxX: 4.8, minZ: -1.2, maxZ: 1.2 };
+      const doorZone = { minX: 3.5, maxX: 4.1, minZ: -1.4, maxZ: 0.4 };
       if (
         x + playerRadius > doorZone.minX &&
         x - playerRadius < doorZone.maxX &&
@@ -140,7 +143,7 @@ export const Player: React.FC = () => {
     }
 
     const { forward, backward, left, right } = keysRef.current;
-    const speed = 4.0; // units per second
+    const speed = 3.8;
 
     let moveX = 0;
     let moveZ = 0;
@@ -162,7 +165,7 @@ export const Player: React.FC = () => {
       const dirX = (moveX / length) * speed * delta;
       const dirZ = (moveZ / length) * speed * delta;
 
-      // Smooth rotation towards movement direction
+      // Smooth turning towards movement direction
       const targetAngle = Math.atan2(moveX, moveZ);
       playerGroupRef.current.rotation.y = THREE.MathUtils.damp(
         playerGroupRef.current.rotation.y,
@@ -172,7 +175,7 @@ export const Player: React.FC = () => {
       );
       setPlayerRotation(playerGroupRef.current.rotation.y);
 
-      // Slide collision: test X and Z separately
+      // Slide collision: test X and Z independently
       let nextX = currentX;
       let nextZ = currentZ;
 
@@ -186,12 +189,15 @@ export const Player: React.FC = () => {
       playerGroupRef.current.position.x = nextX;
       playerGroupRef.current.position.z = nextZ;
 
-      // Bobbing walking leg animation
-      footstepTimerRef.current += delta * 12;
-      const legSwing = Math.sin(footstepTimerRef.current) * 0.45;
+      // Walking leg animation & subtle coat sway
+      footstepTimerRef.current += delta * 11;
+      const legSwing = Math.sin(footstepTimerRef.current) * 0.42;
       if (leftLegRef.current && rightLegRef.current) {
         leftLegRef.current.rotation.x = legSwing;
         rightLegRef.current.rotation.x = -legSwing;
+      }
+      if (coatTailsRef.current) {
+        coatTailsRef.current.rotation.x = 0.15 + Math.abs(legSwing) * 0.2;
       }
 
       // Footstep sound triggers
@@ -201,43 +207,38 @@ export const Player: React.FC = () => {
 
       setPlayerPosition([nextX, playerGroupRef.current.position.y, nextZ]);
     } else {
-      // Reset legs when standing
+      // Return to neutral stance
       if (leftLegRef.current && rightLegRef.current) {
         leftLegRef.current.rotation.x = THREE.MathUtils.damp(leftLegRef.current.rotation.x, 0, 10, delta);
         rightLegRef.current.rotation.x = THREE.MathUtils.damp(rightLegRef.current.rotation.x, 0, 10, delta);
       }
+      if (coatTailsRef.current) {
+        coatTailsRef.current.rotation.x = THREE.MathUtils.damp(coatTailsRef.current.rotation.x, 0.05, 8, delta);
+      }
     }
 
-    // ================= SMOOTH CAMERA FOLLOW WITHOUT WALL CLIPPING =================
-    // Camera sits behind and above player, looking down into the room
-    const targetCamX = THREE.MathUtils.clamp(
-      playerGroupRef.current.position.x * 0.7,
-      -2.8,
-      2.8
-    );
-    const targetCamY = 2.8;
-    const targetCamZ = THREE.MathUtils.clamp(
-      playerGroupRef.current.position.z * 0.4 + 3.8,
-      1.5,
-      4.4
-    );
-
-    camera.position.x = THREE.MathUtils.damp(camera.position.x, targetCamX, 4.0, delta);
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, targetCamY, 4.0, delta);
-    camera.position.z = THREE.MathUtils.damp(camera.position.z, targetCamZ, 4.0, delta);
-
-    // Look at player waist/chest and slightly ahead into the room
-    const lookTarget = new THREE.Vector3(
-      playerGroupRef.current.position.x * 0.6,
-      0.9,
-      playerGroupRef.current.position.z * 0.6 - 1.0
-    );
-    camera.lookAt(lookTarget);
-
-    // ================= CONTEXTUAL INTERACTION RANGE CHECK =================
+    // ================= ART-DIRECTED CINEMATIC CAMERA COMPOSITION =================
+    // Camera is elevated in a cinematic 3/4 isometric perspective framing the workstation, door, and player
     const px = playerGroupRef.current.position.x;
     const pz = playerGroupRef.current.position.z;
 
+    const targetCamX = THREE.MathUtils.clamp(px * 0.45 + 0.2, -1.5, 1.5);
+    const targetCamY = 3.1;
+    const targetCamZ = THREE.MathUtils.clamp(pz * 0.4 + 4.1, 2.6, 4.8);
+
+    camera.position.x = THREE.MathUtils.damp(camera.position.x, targetCamX, 3.5, delta);
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, targetCamY, 3.5, delta);
+    camera.position.z = THREE.MathUtils.damp(camera.position.z, targetCamZ, 3.5, delta);
+
+    // Look at point that keeps the workstation & player centered
+    const lookTarget = new THREE.Vector3(
+      px * 0.35 - 0.25,
+      1.0,
+      pz * 0.35 - 1.3
+    );
+    camera.lookAt(lookTarget);
+
+    // ================= CONTEXTUAL INTERACTION PROXIMITY CHECK =================
     let closest: (typeof INTERACTABLES)[0] | null = null;
     let closestDist = Infinity;
 
@@ -256,71 +257,90 @@ export const Player: React.FC = () => {
   });
 
   return (
-    <group ref={playerGroupRef} position={[0, 0, 0]}>
-      {/* Player character visual mesh */}
-      {/* Torso / Jacket */}
-      <mesh position={[0, 0.72, 0]} castShadow>
-        <boxGeometry args={[0.38, 0.46, 0.24]} />
-        <meshStandardMaterial color="#312e81" roughness={0.7} />
+    <group ref={playerGroupRef} position={[0.2, 0, 0.8]} rotation={[0, Math.PI, 0]}>
+      {/* ================= STYLIZED INDIE EXPLORER MODEL ================= */}
+      {/* Torso: Field Explorer Jacket */}
+      <mesh position={[0, 0.78, 0]} castShadow>
+        <boxGeometry args={[0.34, 0.42, 0.22]} />
+        <meshStandardMaterial color="#2c283d" roughness={0.7} />
       </mesh>
 
-      {/* Explorer Backpack */}
-      <mesh position={[0, 0.74, -0.16]} castShadow>
-        <boxGeometry args={[0.28, 0.32, 0.14]} />
-        <meshStandardMaterial color="#1e1b4b" roughness={0.8} />
-      </mesh>
-      {/* Backpack cyan LED strip */}
-      <mesh position={[0, 0.8, -0.235]}>
-        <boxGeometry args={[0.16, 0.04, 0.01]} />
-        <meshBasicMaterial color="#00f0ff" />
+      {/* Jacket Collar / Scarf */}
+      <mesh position={[0, 0.98, 0.02]} castShadow>
+        <boxGeometry args={[0.26, 0.08, 0.2]} />
+        <meshStandardMaterial color="#403856" roughness={0.75} />
       </mesh>
 
-      {/* Head */}
-      <mesh position={[0, 1.12, 0]} castShadow>
-        <boxGeometry args={[0.26, 0.26, 0.26]} />
-        <meshStandardMaterial color="#fcd34d" roughness={0.6} />
+      {/* Field Jacket Lower Tails */}
+      <mesh ref={coatTailsRef} position={[0, 0.54, -0.01]} castShadow>
+        <boxGeometry args={[0.32, 0.16, 0.2]} />
+        <meshStandardMaterial color="#242033" roughness={0.75} />
       </mesh>
 
-      {/* Retro Cybergoggles / Visor */}
-      <mesh position={[0, 1.14, 0.135]}>
-        <boxGeometry args={[0.24, 0.08, 0.04]} />
+      {/* Explorer Field Satchel / Backpack */}
+      <mesh position={[0, 0.82, -0.14]} castShadow>
+        <boxGeometry args={[0.26, 0.28, 0.12]} />
+        <meshStandardMaterial color="#1a1724" roughness={0.8} />
+      </mesh>
+      {/* Satchel brass buckle */}
+      <mesh position={[0, 0.8, -0.205]}>
+        <boxGeometry args={[0.06, 0.03, 0.01]} />
+        <meshStandardMaterial color="#d97706" metalness={0.8} />
+      </mesh>
+
+      {/* Refined Stylized Head */}
+      <mesh position={[0, 1.15, 0]} castShadow>
+        <boxGeometry args={[0.22, 0.24, 0.22]} />
+        <meshStandardMaterial color="#ded7c8" roughness={0.65} />
+      </mesh>
+      {/* Stylized Hair / Explorer Cap */}
+      <mesh position={[0, 1.25, -0.02]} castShadow>
+        <boxGeometry args={[0.23, 0.08, 0.23]} />
+        <meshStandardMaterial color="#1c1926" roughness={0.75} />
+      </mesh>
+
+      {/* Discreet Retro-Futuristic Visor Monocle */}
+      <mesh position={[0, 1.16, 0.115]}>
+        <boxGeometry args={[0.2, 0.05, 0.025]} />
         <meshStandardMaterial
           color="#06b6d4"
           emissive="#00f0ff"
-          emissiveIntensity={1.2}
+          emissiveIntensity={1.0}
           roughness={0.2}
         />
       </mesh>
 
-      {/* Headset / Antenna */}
-      <mesh position={[0.14, 1.15, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.04, 0.04, 0.06, 8]} />
-        <meshStandardMaterial color="#475569" />
-      </mesh>
-      <mesh position={[0.14, 1.28, 0]}>
-        <cylinderGeometry args={[0.008, 0.008, 0.2, 6]} />
-        <meshStandardMaterial color="#94a3b8" />
-      </mesh>
-
-      {/* Left Leg */}
-      <group position={[-0.11, 0.48, 0]}>
-        <mesh ref={leftLegRef} position={[0, -0.24, 0]} castShadow>
-          <boxGeometry args={[0.13, 0.46, 0.14]} />
-          <meshStandardMaterial color="#1e293b" roughness={0.8} />
+      {/* Left Leg & Field Boot */}
+      <group ref={leftLegRef} position={[-0.09, 0.5, 0]}>
+        {/* Tapered trouser */}
+        <mesh position={[0, -0.16, 0]} castShadow>
+          <boxGeometry args={[0.11, 0.32, 0.12]} />
+          <meshStandardMaterial color="#1f1c29" roughness={0.8} />
+        </mesh>
+        {/* Leather boot */}
+        <mesh position={[0, -0.38, 0.02]} castShadow>
+          <boxGeometry args={[0.11, 0.14, 0.16]} />
+          <meshStandardMaterial color="#13111a" roughness={0.65} />
         </mesh>
       </group>
 
-      {/* Right Leg */}
-      <group position={[0.11, 0.48, 0]}>
-        <mesh ref={rightLegRef} position={[0, -0.24, 0]} castShadow>
-          <boxGeometry args={[0.13, 0.46, 0.14]} />
-          <meshStandardMaterial color="#1e293b" roughness={0.8} />
+      {/* Right Leg & Field Boot */}
+      <group ref={rightLegRef} position={[0.09, 0.5, 0]}>
+        {/* Tapered trouser */}
+        <mesh position={[0, -0.16, 0]} castShadow>
+          <boxGeometry args={[0.11, 0.32, 0.12]} />
+          <meshStandardMaterial color="#1f1c29" roughness={0.8} />
+        </mesh>
+        {/* Leather boot */}
+        <mesh position={[0, -0.38, 0.02]} castShadow>
+          <boxGeometry args={[0.11, 0.14, 0.16]} />
+          <meshStandardMaterial color="#13111a" roughness={0.65} />
         </mesh>
       </group>
 
-      {/* Player Proximity Soft Foot Shadow */}
-      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.34, 16]} />
+      {/* Soft Contact Ground AO Shadow */}
+      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.3, 16]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.35} />
       </mesh>
     </group>

@@ -5,15 +5,25 @@ import { useGameStore } from '../../state/gameStore';
 
 export const DustParticles: React.FC = () => {
   const bloomParticles = useGameStore((state) => state.bloomParticles);
+  const lampOn = useGameStore((state) => state.lampOn);
   const pointsRef = useRef<THREE.Points>(null);
 
-  const particleCount = 75;
+  // Localized subtle dust motes floating gently in workstation light & window beam
+  const particleCount = 45;
   const positions = useMemo(() => {
     const pos = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 8.5; // X: -4.2 to 4.2
-      pos[i * 3 + 1] = 0.5 + Math.random() * 3.2; // Y: 0.5 to 3.7
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 8.5; // Z: -4.2 to 4.2
+      if (i < 30) {
+        // Pool around workstation desk lamp
+        pos[i * 3] = -1.2 + (Math.random() - 0.5) * 1.8;
+        pos[i * 3 + 1] = 0.8 + Math.random() * 1.5;
+        pos[i * 3 + 2] = -2.2 + (Math.random() - 0.5) * 1.4;
+      } else {
+        // Pool along window moonlight shaft
+        pos[i * 3] = -3.2 + (Math.random() - 0.5) * 1.2;
+        pos[i * 3 + 1] = 1.0 + Math.random() * 1.8;
+        pos[i * 3 + 2] = -0.5 + (Math.random() - 0.5) * 1.5;
+      }
     }
     return pos;
   }, [particleCount]);
@@ -25,13 +35,13 @@ export const DustParticles: React.FC = () => {
 
     for (let i = 0; i < particleCount; i++) {
       const idx = i * 3;
-      // Gentle floating oscillation
-      posArray[idx + 1] += Math.sin(t * 0.8 + i) * 0.002;
-      posArray[idx] += Math.cos(t * 0.5 + i) * 0.0015;
+      // Very slow, organic drift
+      posArray[idx + 1] += Math.sin(t * 0.4 + i) * 0.0012;
+      posArray[idx] += Math.cos(t * 0.3 + i) * 0.0008;
 
-      // Wrap vertically
-      if (posArray[idx + 1] > 3.9) posArray[idx + 1] = 0.4;
-      if (posArray[idx + 1] < 0.3) posArray[idx + 1] = 3.8;
+      // Wrap subtly around workstation bounds
+      if (posArray[idx + 1] > 2.6) posArray[idx + 1] = 0.8;
+      if (posArray[idx + 1] < 0.7) posArray[idx + 1] = 2.5;
     }
     pointsRef.current.geometry.attributes.position.needsUpdate = true;
   });
@@ -44,10 +54,10 @@ export const DustParticles: React.FC = () => {
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
-        size={0.045}
-        color="#a5f3fc"
+        size={0.035}
+        color={lampOn ? '#fef08a' : '#7dd3fc'}
         transparent
-        opacity={0.45}
+        opacity={0.35}
         blending={THREE.AdditiveBlending}
       />
     </points>

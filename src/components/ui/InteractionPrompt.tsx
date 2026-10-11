@@ -13,18 +13,16 @@ export const InteractionPrompt: React.FC = () => {
 
   return (
     <div
-      className="interaction-prompt-container"
+      className="interaction-cue-pill"
       onClick={interact}
       role="button"
       tabIndex={0}
-      title="Click or press E to interact"
+      title="Press E or click to interact"
     >
-      <div className="interaction-key-badge">
-        <span>E</span>
-      </div>
-      <div className="interaction-info">
-        <span className="interaction-title">{activeInteractable.name}</span>
-        <span className="interaction-action">{activeInteractable.actionText}</span>
+      <kbd className="interaction-keycap">E</kbd>
+      <div className="interaction-text-group">
+        <span className="interaction-object-name">{activeInteractable.name}</span>
+        <span className="interaction-action-desc">{activeInteractable.actionText}</span>
       </div>
     </div>
   );
