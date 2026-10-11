@@ -139,64 +139,101 @@
 }
 
 .objective-card {
-  background: rgba(13, 17, 28, 0.78);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(11, 15, 26, 0.82);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: 8px;
-  padding: 0.75rem 1rem;
+  padding: 0.8rem 1.05rem;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  gap: 0.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  min-width: 260px;
+}
+
+.objective-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  padding-bottom: 0.35rem;
 }
 
 .objective-header {
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.64rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--text-dim);
+}
+
+.objective-progress {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.08);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  letter-spacing: 0.06em;
 }
 
 .objective-rows {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 
 .objective-row {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  font-size: 0.8rem;
+  gap: 0.6rem;
+  font-size: 0.79rem;
   color: var(--text-main);
-  transition: opacity 0.2s ease, color 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .objective-row.done {
-  color: var(--text-dim);
-  opacity: 0.6;
+  color: #94a3b8;
+  opacity: 0.85;
 }
 
-.pip {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  border: 1px solid var(--text-dim);
-  background: transparent;
+.pip-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
-.pip.done {
-  border-color: var(--accent-cyan);
-  background: var(--accent-cyan);
-  box-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+.pip-box.done {
+  border-color: rgba(0, 240, 255, 0.6);
+  background: rgba(0, 240, 255, 0.15);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+.pip-check-icon {
+  color: var(--accent-cyan);
+  stroke-width: 3;
+}
+
+.pip-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.5);
 }
 
 .objective-text {
   font-size: 0.78rem;
-  letter-spacing: 0.01em;
+  font-weight: 500;
+  letter-spacing: 0.015em;
+  line-height: 1.3;
 }
 
 /* Bottom Right: Keyboard Guide */

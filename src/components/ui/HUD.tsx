@@ -1,6 +1,6 @@
 import React from 'react';
 import { useGameStore } from '../../state/gameStore';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, Check } from 'lucide-react';
 
 export const HUD: React.FC = () => {
   const isPaused = useGameStore((state) => state.isPaused);
@@ -12,6 +12,13 @@ export const HUD: React.FC = () => {
   const clockSolved = useGameStore((state) => state.clockSolved);
   const accessedTerminal = useGameStore((state) => state.accessedTerminal);
   const doorLocked = useGameStore((state) => state.doorLocked);
+
+  const completedCount =
+    (inspectedLamp ? 1 : 0) +
+    (clockSolved ? 1 : 0) +
+    (accessedTerminal ? 1 : 0) +
+    (!doorLocked ? 1 : 0);
+  const totalCount = 4;
 
   return (
     <div className="hud-overlay">
@@ -49,22 +56,33 @@ export const HUD: React.FC = () => {
       {/* Bottom Left: Compact, elegant objective tracker */}
       <div className="hud-bottom-left">
         <div className="objective-card">
-          <div className="objective-header">RECOVERY PROTOCOL</div>
+          <div className="objective-header-row">
+            <span className="objective-header">RECOVERY PROTOCOL</span>
+            <span className="objective-progress">{completedCount}/{totalCount}</span>
+          </div>
           <div className="objective-rows">
             <div className={`objective-row ${inspectedLamp ? 'done' : ''}`}>
-              <span className={`pip ${inspectedLamp ? 'done' : ''}`} />
+              <span className={`pip-box ${inspectedLamp ? 'done' : ''}`}>
+                {inspectedLamp ? <Check size={11} className="pip-check-icon" /> : <span className="pip-dot" />}
+              </span>
               <span className="objective-text">Toggle workstation lamp</span>
             </div>
             <div className={`objective-row ${clockSolved ? 'done' : ''}`}>
-              <span className={`pip ${clockSolved ? 'done' : ''}`} />
+              <span className={`pip-box ${clockSolved ? 'done' : ''}`}>
+                {clockSolved ? <Check size={11} className="pip-check-icon" /> : <span className="pip-dot" />}
+              </span>
               <span className="objective-text">Synchronize chronometer (04:04)</span>
             </div>
             <div className={`objective-row ${accessedTerminal ? 'done' : ''}`}>
-              <span className={`pip ${accessedTerminal ? 'done' : ''}`} />
+              <span className={`pip-box ${accessedTerminal ? 'done' : ''}`}>
+                {accessedTerminal ? <Check size={11} className="pip-check-icon" /> : <span className="pip-dot" />}
+              </span>
               <span className="objective-text">Access archival terminal</span>
             </div>
             <div className={`objective-row ${!doorLocked ? 'done' : ''}`}>
-              <span className={`pip ${!doorLocked ? 'done' : ''}`} />
+              <span className={`pip-box ${!doorLocked ? 'done' : ''}`}>
+                {!doorLocked ? <Check size={11} className="pip-check-icon" /> : <span className="pip-dot" />}
+              </span>
               <span className="objective-text">Disengage blast airlock</span>
             </div>
           </div>
