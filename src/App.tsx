@@ -8,6 +8,7 @@ import { DoorModal } from './components/ui/DoorModal';
 import { WindowModal } from './components/ui/WindowModal';
 import { NotesModal } from './components/ui/NotesModal';
 import { PauseModal } from './components/ui/PauseModal';
+import { JournalModal } from './components/ui/JournalModal';
 import { useGameStore } from './state/gameStore';
 import { soundManager } from './audio/soundManager';
 import './App.css';
@@ -19,16 +20,25 @@ export const App: React.FC = () => {
   const isPaused = useGameStore((state) => state.isPaused);
   const setPaused = useGameStore((state) => state.setPaused);
 
-  // Global key bindings for Interact (E) and Escape (Pause/Close)
+  // Global key bindings for Interact (E), Archive (Tab), and Escape (Pause/Close)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept E if user is typing into terminal input
+      // Don't intercept game shortcuts if user is typing into input/textarea
       const target = e.target as HTMLElement;
       const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
 
       if (e.code === 'KeyE' && !isInput && !e.repeat) {
         e.preventDefault();
         interact();
+      } else if (e.code === 'Tab' && !isInput && !e.repeat) {
+        e.preventDefault();
+        if (!isPaused) {
+          if (activeModal === 'journal') {
+            setActiveModal(null);
+          } else if (activeModal === null) {
+            setActiveModal('journal');
+          }
+        }
       } else if (e.code === 'Escape') {
         e.preventDefault();
         if (activeModal) {
@@ -78,6 +88,7 @@ export const App: React.FC = () => {
       <DoorModal />
       <WindowModal />
       <NotesModal />
+      <JournalModal />
       <PauseModal />
     </div>
   );

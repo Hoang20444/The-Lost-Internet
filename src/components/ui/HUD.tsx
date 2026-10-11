@@ -1,12 +1,14 @@
 import React from 'react';
 import { useGameStore } from '../../state/gameStore';
-import { Volume2, VolumeX, Check } from 'lucide-react';
+import { Volume2, VolumeX, Check, Archive } from 'lucide-react';
 
 export const HUD: React.FC = () => {
   const isPaused = useGameStore((state) => state.isPaused);
   const setPaused = useGameStore((state) => state.setPaused);
   const soundEnabled = useGameStore((state) => state.soundEnabled);
   const toggleSound = useGameStore((state) => state.toggleSound);
+  const discoveredClues = useGameStore((state) => state.discoveredClues);
+  const toggleJournal = useGameStore((state) => state.toggleJournal);
 
   const inspectedLamp = useGameStore((state) => state.inspectedLamp);
   const clockSolved = useGameStore((state) => state.clockSolved);
@@ -35,6 +37,17 @@ export const HUD: React.FC = () => {
 
       {/* Top Right: Unobtrusive system controls */}
       <div className="hud-top-right">
+        <button
+          className="hud-subtle-btn"
+          onClick={toggleJournal}
+          title="Memory Archive (TAB)"
+        >
+          <Archive size={14} className="text-cyan" />
+          <span className="btn-text">ARCHIVE</span>
+          <span className="hud-clue-counter">[{discoveredClues.length}]</span>
+          <kbd className="hud-kbd">TAB</kbd>
+        </button>
+
         <button
           className="hud-subtle-btn"
           onClick={toggleSound}
@@ -99,6 +112,10 @@ export const HUD: React.FC = () => {
           <span className="nav-item">
             <kbd className="hud-kbd">E</kbd>
             <span className="nav-label">Interact</span>
+          </span>
+          <span className="nav-item">
+            <kbd className="hud-kbd">TAB</kbd>
+            <span className="nav-label">Archive ({discoveredClues.length})</span>
           </span>
           <span className="nav-item">
             <kbd className="hud-kbd">ESC</kbd>

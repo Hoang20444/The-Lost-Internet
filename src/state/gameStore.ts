@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { soundManager } from '../audio/soundManager';
 import type { InteractableObject, ModalType } from '../types/game';
+import type { Clue } from '../types/clues';
+import { CLUE_CATALOG } from '../config/clues';
+import {
+  loadSavedGameState,
+  saveGameState,
+  clearSavedGameState,
+  hydrateClues,
+} from '../utils/storage';
 
 interface GameState {
   // Player state
@@ -43,6 +51,15 @@ interface GameState {
   setActiveModal: (modal: ModalType) => void;
   interact: () => void;
 
+  // Phase 2.2 — Memory Archive Clues & Inventory
+  discoveredClues: Clue[];
+  selectedClueId: string | null;
+  setSelectedClueId: (id: string | null) => void;
+  discoverClue: (clueId: string) => void;
+  toggleJournal: () => void;
+  persistProgress: () => void;
+  clearSavedGame: () => void;
+
   // Game Settings & Pause
   soundEnabled: boolean;
   toggleSound: () => void;
@@ -73,6 +90,9 @@ const INITIAL_TERMINAL_LOGS = [
 // Module-level timestamp to debounce rapid repeated interaction events
 let lastInteractTimestamp = 0;
 
+// Load persisted state if available
+const savedState = loadSavedGameState();
+
 export const useGameStore = create<GameState>((set, get) => ({
   player: {
     position: [0, 0, 0],
@@ -90,15 +110,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       player: { ...state.player, position: [0, 0, 0], rotation: 0, isMoving: false },
     })),
 
-  lampOn: true,
+  lampOn: savedState ? savedState.lampOn : true,
   toggleLamp: () => {
     const next = !get().lampOn;
     soundManager.playSwitch(next);
     set({ lampOn: next, inspectedLamp: true });
+    get().persistProgress();
   },
 
-  clockTime: { hours: 2, minutes: 20 },
-  clockSolved: false,
+  clockTime: savedState ? savedState.clockTime : { hours: 2, minutes: 20 },
+  clockSolved: savedState ? savedState.clockSolved : false,
   adjustClock: (deltaHours: number, deltaMinutes: number) => {
     const current = get().clockTime;
     let newMinutes = current.minutes + deltaMinutes;
@@ -130,6 +151,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       clockSolved: isTarget,
       adjustedClock: true,
     });
+    get().persistProgress();
   },
   setClockTime: (hours: number, minutes: number) => {
     const isTarget = hours === 4 && minutes === 4;
@@ -139,18 +161,21 @@ export const useGameStore = create<GameState>((set, get) => ({
       clockSolved: isTarget,
       adjustedClock: true,
     });
+    get().persistProgress();
   },
 
-  doorLocked: true,
+  doorLocked: savedState ? savedState.doorLocked : true,
   unlockDoor: () => {
     if (get().doorLocked) {
       soundManager.playDoorUnlock();
       set({ doorLocked: false, unlockedDoor: true });
+      get().persistProgress();
     }
   },
   lockDoor: () => {
     soundManager.playSwitch(false);
     set({ doorLocked: true });
+    get().persistProgress();
   },
 
   terminalLogs: INITIAL_TERMINAL_LOGS,
@@ -289,8 +314,82 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ activeModal });
   },
 
+  // Phase 2.2 — Memory Archive Clues & Inventory
+  discoveredClues: savedState ? hydrateClues(savedState.discoveredClueIds) : [],
+  selectedClueId:
+    savedState && savedState.discoveredClueIds.length > 0 ? savedState.discoveredClueIds[0] : null,
+  setSelectedClueId: (selectedClueId) => set({ selectedClueId }),
+
+  discoverClue: (clueId: string) => {
+    const { discoveredClues } = get();
+    // Do not store duplicate clues
+    if (discoveredClues.some((c) => c.id === clueId)) return;
+
+    const def = CLUE_CATALOG.find((c) => c.id === clueId);
+    if (!def) return;
+
+    const clock = get().clockTime;
+    const timeStamp = `10/11/04 // ${String(clock.hours).padStart(2, '0')}:${String(clock.minutes).padStart(2, '0')}`;
+
+    const newClue: Clue = {
+      ...def,
+      discoveredAt: timeStamp,
+    };
+
+    const nextClues = [...discoveredClues, newClue];
+    set((state) => ({
+      discoveredClues: nextClues,
+      selectedClueId: state.selectedClueId || newClue.id,
+    }));
+
+    get().persistProgress();
+  },
+
+  toggleJournal: () => {
+    const { activeModal, setActiveModal, isPaused } = get();
+    if (isPaused) return;
+
+    if (activeModal === 'journal') {
+      setActiveModal(null);
+    } else if (activeModal === null) {
+      setActiveModal('journal');
+    }
+  },
+
+  persistProgress: () => {
+    const s = get();
+    saveGameState({
+      version: 1,
+      discoveredClueIds: s.discoveredClues.map((c) => c.id),
+      lampOn: s.lampOn,
+      clockTime: s.clockTime,
+      clockSolved: s.clockSolved,
+      doorLocked: s.doorLocked,
+      inspectedLamp: s.inspectedLamp,
+      adjustedClock: s.adjustedClock,
+      accessedTerminal: s.accessedTerminal,
+      unlockedDoor: s.unlockedDoor,
+    });
+  },
+
+  clearSavedGame: () => {
+    clearSavedGameState();
+    set({
+      discoveredClues: [],
+      selectedClueId: null,
+      lampOn: true,
+      clockTime: { hours: 2, minutes: 20 },
+      clockSolved: false,
+      doorLocked: true,
+      inspectedLamp: false,
+      adjustedClock: false,
+      accessedTerminal: false,
+      unlockedDoor: false,
+    });
+  },
+
   interact: () => {
-    const { activeInteractable, activeModal, isPaused, toggleLamp } = get();
+    const { activeInteractable, activeModal, isPaused, toggleLamp, discoverClue } = get();
 
     // 1. Guard against interactions while paused or when a modal is active
     if (isPaused || activeModal) return;
@@ -312,18 +411,24 @@ export const useGameStore = create<GameState>((set, get) => ({
         break;
       case 'computer':
         set({ activeModal: 'terminal', accessedTerminal: true });
+        discoverClue('unknown-signal');
+        get().persistProgress();
         break;
       case 'clock':
         set({ activeModal: 'clock' });
+        discoverClue('clock-0404');
         break;
       case 'door':
         set({ activeModal: 'door' });
+        discoverClue('door-lockdown');
         break;
       case 'window':
         set({ activeModal: 'window' });
+        discoverClue('window-skyline');
         break;
       case 'notes':
         set({ activeModal: 'notes' });
+        discoverClue('archive-04');
         break;
     }
   },
@@ -347,8 +452,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ isPaused });
   },
 
-  inspectedLamp: false,
-  adjustedClock: false,
-  accessedTerminal: false,
-  unlockedDoor: false,
+  inspectedLamp: savedState ? savedState.inspectedLamp : false,
+  adjustedClock: savedState ? savedState.adjustedClock : false,
+  accessedTerminal: savedState ? savedState.accessedTerminal : false,
+  unlockedDoor: savedState ? savedState.unlockedDoor : false,
 }));

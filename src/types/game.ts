@@ -30,4 +30,4 @@ export interface GameSettings {
   shadowsEnabled: boolean;
 }
 
-export type ModalType = 'terminal' | 'clock' | 'door' | 'window' | 'notes' | 'pause' | null;
+export type ModalType = 'terminal' | 'clock' | 'door' | 'window' | 'notes' | 'pause' | 'journal' | null;
