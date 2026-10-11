@@ -1,18 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useGameStore } from '../../state/gameStore';
-import {
-  X,
-  Archive,
-  FileText,
-  Clock,
-  Radio,
-  ShieldAlert,
-  Eye,
-  Database,
-  Hash,
-  Compass,
-} from 'lucide-react';
 import type { ClueCategory } from '../../types/clues';
+
+interface CategoryConfig {
+  id: ClueCategory;
+  label: string;
+}
+
+const CATEGORIES: CategoryConfig[] = [
+  { id: 'RECOVERED', label: 'ARCHIVE LOGS' },
+  { id: 'OBSERVATION', label: 'OBSERVATIONS' },
+  { id: 'SIGNAL', label: 'SIGNALS' },
+  { id: 'PROTOCOL', label: 'PROTOCOLS' },
+];
 
 export const JournalModal: React.FC = () => {
   const activeModal = useGameStore((state) => state.activeModal);
@@ -28,201 +28,257 @@ export const JournalModal: React.FC = () => {
     }
   }, [discoveredClues, selectedClueId, setSelectedClueId]);
 
+  const currentIndex = discoveredClues.findIndex((c) => c.id === selectedClueId);
+  const totalCount = discoveredClues.length;
+  const canPrev = currentIndex > 0;
+  const canNext = currentIndex >= 0 && currentIndex < totalCount - 1;
+
+  const handlePrevPage = useCallback(() => {
+    if (currentIndex > 0) {
+      setSelectedClueId(discoveredClues[currentIndex - 1].id);
+    }
+  }, [currentIndex, discoveredClues, setSelectedClueId]);
+
+  const handleNextPage = useCallback(() => {
+    if (currentIndex >= 0 && currentIndex < totalCount - 1) {
+      setSelectedClueId(discoveredClues[currentIndex + 1].id);
+    }
+  }, [currentIndex, totalCount, discoveredClues, setSelectedClueId]);
+
+  // Keyboard navigation for page flipping (ArrowLeft / ArrowRight)
+  useEffect(() => {
+    if (activeModal !== 'journal') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrevPage();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNextPage();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeModal, handlePrevPage, handleNextPage]);
+
   if (activeModal !== 'journal') return null;
 
   const selectedClue =
     discoveredClues.find((c) => c.id === selectedClueId) ||
     (discoveredClues.length > 0 ? discoveredClues[0] : null);
 
-  const getCategoryIcon = (category: ClueCategory) => {
-    switch (category) {
-      case 'RECOVERED':
-        return <Database size={13} className="text-purple" />;
-      case 'OBSERVATION':
-        return <Eye size={13} className="text-cyan" />;
-      case 'SIGNAL':
-        return <Radio size={13} className="text-amber" />;
-      case 'PROTOCOL':
-        return <ShieldAlert size={13} className="text-rose" />;
+  const getInvestigationNote = (id: string): string => {
+    switch (id) {
+      case 'archive-04':
+        return 'The server bay record confirms the outer web collapsed at exactly 04:04. Emergency isolation engaged Chamber 404 immediately after. The stopped wall chronometer points to this exact moment. Synchronizing the clockwork to 04:04 may trigger the chamber\'s pneumatic security override pulse.';
+      case 'clock-0404':
+        return 'The analog wall chronometer was frozen at 04:04, exactly matching the blackout timestamp from Archive-04. Calibrating the hands creates a security override pulse. This frequency pulse corresponds to the password "NET-404" accepted by the retro terminal.';
+      case 'unknown-signal':
+        return 'The vintage CRT terminal is still receiving faint residual carrier packets from October 2004. An isolated shell prompt awaits operator commands. Submitting passcode "NET-404" will disengage the chamber\'s pneumatic airlock lockdown.';
+      case 'door-lockdown':
+        return 'Heavy reinforced blast airlock sealing the chamber from the exterior. Solenoid bolts are locked in place. Disengaging the door requires submitting passcode "NET-404" at the terminal or synchronizing the chronometer to 04:04.';
+      case 'window-skyline':
+        return 'Looking out through the rain confirms total silence across the skyline. No carrier beacons or broadcast signals are active. The outer internet has gone completely dark. Chamber 404 is one of the few surviving offline archives.';
       default:
-        return <FileText size={13} className="text-slate" />;
-    }
-  };
-
-  const getCategoryClass = (category: ClueCategory) => {
-    switch (category) {
-      case 'RECOVERED':
-        return 'cat-recovered';
-      case 'OBSERVATION':
-        return 'cat-observation';
-      case 'SIGNAL':
-        return 'cat-signal';
-      case 'PROTOCOL':
-        return 'cat-protocol';
-      default:
-        return 'cat-general';
+        return 'Observation logged in Chamber 404. Continue investigating surrounding equipment to correlate further leads.';
     }
   };
 
   return (
-    <div className="modal-backdrop" onClick={() => setActiveModal(null)}>
-      <div
-        className="glass-modal-card journal-modal-card"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Memory Archive"
-      >
-        {/* Modal Top Header */}
-        <div className="modal-header journal-header">
-          <div className="modal-header-title">
-            <Archive size={18} className="text-cyan" />
-            <span className="journal-title-text">NODE 404 // MEMORY ARCHIVE</span>
-            <span className="journal-count-chip">
-              {discoveredClues.length} {discoveredClues.length === 1 ? 'RECORD' : 'RECORDS'}
-            </span>
-          </div>
+    <div
+      className="journal-backdrop"
+      onClick={() => setActiveModal(null)}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Investigator's Journal"
+    >
+      <div className="journal-screen-frame" onClick={(e) => e.stopPropagation()}>
+        {/* Top Header Row: JOURNAL title, crisp horizontal line, and X close */}
+        <header className="journal-top-bar">
+          <h1 className="journal-title-text">JOURNAL</h1>
+          <div className="journal-top-line" />
+          <button
+            className="journal-close-btn"
+            onClick={() => setActiveModal(null)}
+            aria-label="Close Journal"
+            title="Close (ESC / TAB)"
+          >
+            X
+          </button>
+        </header>
 
-          <div className="journal-header-actions">
-            <span className="journal-shortcut-hint">
-              <kbd className="hud-kbd">TAB</kbd> / <kbd className="hud-kbd">ESC</kbd> to close
-            </span>
+        {/* Center Main Work Area */}
+        <div className="journal-center-stage">
+          {/* Left Navigation Menu */}
+          <nav className="journal-left-nav" aria-label="Journal categories">
+            {CATEGORIES.map((cat) => {
+              const cluesInCat = discoveredClues.filter((c) => c.category === cat.id);
+              const isCategoryActive = selectedClue?.category === cat.id;
+
+              return (
+                <div key={cat.id} className="journal-cat-block">
+                  <button
+                    className={`journal-cat-title ${isCategoryActive ? 'active' : ''}`}
+                    onClick={() => {
+                      if (cluesInCat.length > 0) {
+                        setSelectedClueId(cluesInCat[0].id);
+                      }
+                    }}
+                  >
+                    <span>{cat.label}</span>
+                  </button>
+
+                  {cluesInCat.length > 0 && (
+                    <div className="journal-cat-items">
+                      {cluesInCat.map((clue) => {
+                        const isSelected = selectedClue?.id === clue.id;
+                        return (
+                          <button
+                            key={clue.id}
+                            className={`journal-item-link ${isSelected ? 'selected' : ''}`}
+                            onClick={() => setSelectedClueId(clue.id)}
+                          >
+                            {clue.title}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+
+          {/* Center Book Area with Pagination Arrows */}
+          <div className="journal-book-container">
+            {/* Left Page Turn Arrow */}
             <button
-              className="modal-close-btn"
-              onClick={() => setActiveModal(null)}
-              aria-label="Close archive"
+              className="journal-nav-arrow arrow-prev"
+              onClick={handlePrevPage}
+              disabled={!canPrev}
+              aria-label="Previous Entry"
+              title="Previous Page (Left Arrow)"
             >
-              <X size={16} />
+              &#9664;
+            </button>
+
+            {/* Realistic Open Journal Notebook */}
+            <div className="journal-physical-book">
+              {/* Leather Cover Trim Backing */}
+              <div className="journal-leather-backing">
+                <div className="journal-spread">
+                  {/* LEFT PAGE */}
+                  <article className="journal-page journal-page-left">
+                    {selectedClue ? (
+                      <div className="journal-page-inner">
+                        <div className="journal-ink-stamp">
+                          <span className="ink-stamp-case">{selectedClue.caseFile || 'CASE 404'}</span>
+                          <span className="ink-stamp-src">LOC: {selectedClue.sourceId.toUpperCase()}</span>
+                        </div>
+
+                        <h2 className="journal-handwritten-title">{selectedClue.title}</h2>
+                        <div className="journal-handwritten-subtitle">{selectedClue.summary}</div>
+
+                        <div className="journal-handwritten-rule" />
+
+                        <div className="journal-handwritten-body">
+                          {selectedClue.fullText}
+                        </div>
+
+                        <div className="journal-page-bottom-stamp">
+                          <span>RECORDED: {selectedClue.discoveredAt}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="journal-page-inner empty-page">
+                        <div className="journal-ink-stamp">
+                          <span>CHAMBER 404 // ARCHIVE</span>
+                          <span>OCTOBER 11, 2004</span>
+                        </div>
+                        <h2 className="journal-handwritten-title">Investigator's Log</h2>
+                        <div className="journal-handwritten-rule" />
+                        <div className="journal-handwritten-body">
+                          Entered Chamber 404 following the network collapse.
+                          <br /><br />
+                          The facility has entered cold isolation. Main power is severed, and atmospheric rain is drumming against the glass.
+                        </div>
+                      </div>
+                    )}
+                  </article>
+
+                  {/* CENTER SPIRAL BINDER RINGS */}
+                  <div className="journal-spiral-spine" aria-hidden="true">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="journal-ring-pair">
+                        <div className="ring-hole ring-hole-l" />
+                        <div className="ring-metal-loop" />
+                        <div className="ring-hole ring-hole-r" />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* RIGHT PAGE */}
+                  <article className="journal-page journal-page-right">
+                    {selectedClue ? (
+                      <div className="journal-page-inner">
+                        <div className="journal-ink-stamp">
+                          <span>DEDUCTIONS & OBSERVATIONS</span>
+                        </div>
+
+                        <div className="journal-handwritten-deduction">
+                          <p className="journal-handwritten-body">
+                            {getInvestigationNote(selectedClue.id)}
+                          </p>
+                        </div>
+
+                        <div className="journal-marginalia-box">
+                          <span className="marginalia-star">&#10038;</span>
+                          <span className="marginalia-text">
+                            Correlate this data with the CRT workstation prompt and security airlock bolts.
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="journal-page-inner empty-page">
+                        <div className="journal-ink-stamp">
+                          <span>FIELD OBSERVATIONS</span>
+                        </div>
+                        <div className="journal-handwritten-body">
+                          No records recovered yet.
+                          <br /><br />
+                          Explore the chamber, check the tape rack, calibrate the wall chronometer, and inspect the retro terminal.
+                          <br /><br />
+                          Press <strong style={{ color: '#854d0e' }}>[E]</strong> near objects in the chamber to log discoveries.
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Page Turn Arrow */}
+            <button
+              className="journal-nav-arrow arrow-next"
+              onClick={handleNextPage}
+              disabled={!canNext}
+              aria-label="Next Entry"
+              title="Next Page (Right Arrow)"
+            >
+              &#9654;
             </button>
           </div>
         </div>
 
-        {/* Modal Split Content */}
-        <div className="journal-split-body">
-          {/* Left Column: Clue Records Index */}
-          <div className="journal-sidebar">
-            <div className="journal-sidebar-header">
-              <Hash size={13} className="text-cyan" />
-              <span>CASE INDEX</span>
-            </div>
-
-            {discoveredClues.length === 0 ? (
-              <div className="journal-empty-sidebar">
-                <Compass size={24} className="text-slate opacity-40 mb-2" />
-                <p>No records recovered yet.</p>
-                <small>Explore the chamber to catalog leads.</small>
-              </div>
-            ) : (
-              <div className="journal-clue-list">
-                {discoveredClues.map((clue) => {
-                  const isSelected = selectedClue?.id === clue.id;
-                  return (
-                    <button
-                      key={clue.id}
-                      className={`journal-clue-tab ${isSelected ? 'active' : ''}`}
-                      onClick={() => setSelectedClueId(clue.id)}
-                    >
-                      <div className="clue-tab-top">
-                        <span className={`clue-category-badge ${getCategoryClass(clue.category)}`}>
-                          {getCategoryIcon(clue.category)}
-                          <span>{clue.category}</span>
-                        </span>
-                        <span className="clue-tab-id">{clue.caseFile || 'CASE 404'}</span>
-                      </div>
-                      <div className="clue-tab-title">{clue.title}</div>
-                      <div className="clue-tab-summary">{clue.summary}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+        {/* Bottom Bar: Thin horizontal line across and centered page counter */}
+        <footer className="journal-bottom-bar">
+          <div className="journal-bottom-line" />
+          <div className="journal-page-indicator">
+            {totalCount > 0 ? `${currentIndex + 1} / ${totalCount}` : '0 / 0'}
           </div>
-
-          {/* Right Column: Clue Dossier Details */}
-          <div className="journal-detail-pane">
-            {selectedClue ? (
-              <div className="clue-dossier">
-                {/* Dossier Meta Strip */}
-                <div className="dossier-meta-header">
-                  <div className="dossier-pill-row">
-                    <span className={`dossier-category-pill ${getCategoryClass(selectedClue.category)}`}>
-                      {getCategoryIcon(selectedClue.category)}
-                      <span>{selectedClue.category} RECORD</span>
-                    </span>
-                    <span className="dossier-casefile-pill">
-                      {selectedClue.caseFile || 'CLASSIFIED // NODE 404'}
-                    </span>
-                  </div>
-
-                  <h2 className="dossier-heading">{selectedClue.title}</h2>
-                  <div className="dossier-subheading">{selectedClue.summary}</div>
-
-                  <div className="dossier-stamp-row">
-                    <div className="dossier-stamp">
-                      <span className="stamp-label">SOURCE:</span>
-                      <span className="stamp-value">{selectedClue.sourceId.toUpperCase()}</span>
-                    </div>
-                    <div className="dossier-stamp">
-                      <span className="stamp-label">RECOVERED:</span>
-                      <span className="stamp-value">{selectedClue.discoveredAt}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dossier Document Content */}
-                <div className="dossier-body">
-                  <div className="dossier-text-card">
-                    <p className="dossier-narrative-p">{selectedClue.fullText}</p>
-                  </div>
-
-                  {/* Contextual Mystery Cross-Reference */}
-                  <div className="dossier-cross-ref">
-                    <div className="cross-ref-title">
-                      <Clock size={13} className="text-cyan" />
-                      <span>INVESTIGATION CROSS-REFERENCE</span>
-                    </div>
-                    <div className="cross-ref-desc">
-                      {selectedClue.id === 'archive-04' &&
-                        'Cross-reference: Align the Wall Chronometer hands to the blackout incident timestamp (04:04) to unlock security circuitry.'}
-                      {selectedClue.id === 'clock-0404' &&
-                        'Cross-reference: The 04:04 calibration pulse generates the passcode override "NET-404" accepted by the Retro Terminal and Chamber Blast Door.'}
-                      {selectedClue.id === 'unknown-signal' &&
-                        'Cross-reference: Enter terminal command "help" or "logs" to inspect offline network remnants. Passcode "NET-404" grants clearance.'}
-                      {selectedClue.id === 'door-lockdown' &&
-                        'Cross-reference: Requires code "NET-404" or clock synchronization to retract pneumatic bolts and step into the exterior.'}
-                      {selectedClue.id === 'window-skyline' &&
-                        'Cross-reference: Confirms global blackout condition. Only localized offline nodes remain functional.'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="journal-empty-dossier">
-                <Archive size={42} className="text-cyan opacity-30 mb-3" />
-                <h3 className="empty-dossier-title">NO RECORDS CATALOGED</h3>
-                <p className="empty-dossier-p">
-                  The Memory Archive is currently empty. Explore the chamber, inspect the server tape
-                  rack, examine the analog wall clock, and interact with the terminal to uncover
-                  leads.
-                </p>
-                <div className="empty-dossier-hint">
-                  <span>Press <kbd className="hud-kbd">E</kbd> near objects in the chamber to investigate</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Modal Footer */}
-        <div className="modal-footer journal-footer">
-          <div className="journal-footer-meta">
-            <span className="meta-pulse-dot" />
-            <span>LOCAL PERSISTENCE ACTIVE — PROGRESS STORED</span>
-          </div>
-          <button className="modal-action-btn" onClick={() => setActiveModal(null)}>
-            Close Archive
-          </button>
-        </div>
+        </footer>
       </div>
     </div>
   );
