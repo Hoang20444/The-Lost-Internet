@@ -38,10 +38,34 @@ export const Player: React.FC = () => {
   const isPaused = useGameStore((state) => state.isPaused);
   const doorLocked = useGameStore((state) => state.doorLocked);
 
-  // Setup keyboard event listeners
+  // Helper to reset all movement keys
+  const clearKeys = () => {
+    keysRef.current = {
+      forward: false,
+      backward: false,
+      left: false,
+      right: false,
+    };
+  };
+
+  // Reset keys whenever paused or when modal state changes
+  useEffect(() => {
+    if (isPaused || activeModal) {
+      clearKeys();
+      setPlayerMoving(false);
+    }
+  }, [isPaused, activeModal, setPlayerMoving]);
+
+  // Setup robust keyboard and window focus event listeners
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (activeModal === 'terminal') return;
+      // Ignore movement if game is paused or any modal is active
+      if (isPaused || activeModal) return;
+
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        return;
+      }
 
       switch (e.code) {
         case 'KeyW':
@@ -64,6 +88,7 @@ export const Player: React.FC = () => {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      // Always allow key releases to clear state cleanly regardless of modal/pause
       switch (e.code) {
         case 'KeyW':
         case 'ArrowUp':
@@ -84,14 +109,31 @@ export const Player: React.FC = () => {
       }
     };
 
+    // Robust focus loss handlers: clear all keys when window loses focus or document is hidden
+    const handleBlur = () => {
+      clearKeys();
+      setPlayerMoving(false);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        clearKeys();
+        setPlayerMoving(false);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [activeModal]);
+  }, [activeModal, isPaused, setPlayerMoving]);
 
   // Collision checking helper
   const checkCollision = (x: number, z: number, playerRadius: number = 0.32): boolean => {
@@ -142,6 +184,18 @@ export const Player: React.FC = () => {
     if (!playerGroupRef.current) return;
     if (isPaused || activeModal) {
       setPlayerMoving(false);
+      stepTriggeredRef.current = false;
+      if (leftLegRef.current && rightLegRef.current) {
+        leftLegRef.current.rotation.x = THREE.MathUtils.damp(leftLegRef.current.rotation.x, 0, 10, delta);
+        rightLegRef.current.rotation.x = THREE.MathUtils.damp(rightLegRef.current.rotation.x, 0, 10, delta);
+      }
+      if (leftArmRef.current && rightArmRef.current) {
+        leftArmRef.current.rotation.x = THREE.MathUtils.damp(leftArmRef.current.rotation.x, 0, 10, delta);
+        rightArmRef.current.rotation.x = THREE.MathUtils.damp(rightArmRef.current.rotation.x, 0, 10, delta);
+      }
+      if (coatTailsRef.current) {
+        coatTailsRef.current.rotation.x = THREE.MathUtils.damp(coatTailsRef.current.rotation.x, 0.05, 8, delta);
+      }
       return;
     }
 
@@ -168,15 +222,16 @@ export const Player: React.FC = () => {
       const dirX = (moveX / length) * speed * delta;
       const dirZ = (moveZ / length) * speed * delta;
 
-      // Smooth turning towards movement direction
+      // Smooth shortest-arc turning towards movement direction (prevents 360 wrap-around spins)
       const targetAngle = Math.atan2(moveX, moveZ);
-      playerGroupRef.current.rotation.y = THREE.MathUtils.damp(
-        playerGroupRef.current.rotation.y,
-        targetAngle,
-        14,
-        delta
-      );
-      setPlayerRotation(playerGroupRef.current.rotation.y);
+      const currentRot = playerGroupRef.current.rotation.y;
+      let angleDiff = (targetAngle - currentRot) % (Math.PI * 2);
+      if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+      if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+
+      const newRot = currentRot + angleDiff * (1 - Math.exp(-14 * delta));
+      playerGroupRef.current.rotation.y = newRot;
+      setPlayerRotation(newRot);
 
       // Slide collision: test X and Z independently
       let nextX = currentX;
