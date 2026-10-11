@@ -14,6 +14,7 @@ export const Player: React.FC = () => {
   const rightArmRef = useRef<THREE.Group>(null);
   const coatTailsRef = useRef<THREE.Group>(null);
   const footstepTimerRef = useRef<number>(0);
+  const stepTriggeredRef = useRef<boolean>(false);
 
   // Keyboard input state
   const keysRef = useRef<{
@@ -191,10 +192,11 @@ export const Player: React.FC = () => {
       playerGroupRef.current.position.x = nextX;
       playerGroupRef.current.position.z = nextZ;
 
-      // Walking leg animation & coordinated natural arm swing
-      footstepTimerRef.current += delta * 11;
-      const legSwing = Math.sin(footstepTimerRef.current) * 0.42;
-      const armSwing = Math.sin(footstepTimerRef.current) * 0.36;
+      // Walking gait: coordinated natural leg swing and opposing arm swing
+      footstepTimerRef.current += delta * 10;
+      const sinWave = Math.sin(footstepTimerRef.current);
+      const legSwing = sinWave * 0.38;
+      const armSwing = sinWave * 0.32;
 
       if (leftLegRef.current && rightLegRef.current) {
         leftLegRef.current.rotation.x = legSwing;
@@ -205,17 +207,21 @@ export const Player: React.FC = () => {
         rightArmRef.current.rotation.x = armSwing;
       }
       if (coatTailsRef.current) {
-        coatTailsRef.current.rotation.x = 0.12 + Math.abs(legSwing) * 0.18;
+        coatTailsRef.current.rotation.x = 0.12 + Math.abs(legSwing) * 0.22;
       }
 
-      // Footstep sound triggers
-      if (Math.sin(footstepTimerRef.current) > 0.95) {
+      // Single-trigger footstep sound with latch hysteresis (prevents rapid audio machine-gunning)
+      if (sinWave > 0.85 && !stepTriggeredRef.current) {
         soundManager.playFootstep();
+        stepTriggeredRef.current = true;
+      } else if (sinWave < 0.2) {
+        stepTriggeredRef.current = false;
       }
 
       setPlayerPosition([nextX, playerGroupRef.current.position.y, nextZ]);
     } else {
-      // Return to neutral stance
+      // Return smoothly to balanced neutral stance
+      stepTriggeredRef.current = false;
       if (leftLegRef.current && rightLegRef.current) {
         leftLegRef.current.rotation.x = THREE.MathUtils.damp(leftLegRef.current.rotation.x, 0, 10, delta);
         rightLegRef.current.rotation.x = THREE.MathUtils.damp(rightLegRef.current.rotation.x, 0, 10, delta);
@@ -270,229 +276,195 @@ export const Player: React.FC = () => {
 
   return (
     <group ref={playerGroupRef} position={[0.2, 0, 0.8]} rotation={[0, Math.PI, 0]}>
-      {/* ================= COHERENT STYLIZED LOW-POLY EXPLORER ================= */}
+      {/* ================= COHESIVE SCULPTED LOW-POLY EXPLORER ================= */}
 
-      {/* 1. Pelvis / Hip Core */}
-      <mesh position={[0, 0.52, 0]} castShadow>
+      {/* 1. Pelvis & Hip Core (Continuous anatomical connection to legs) */}
+      <mesh position={[0, 0.54, 0]} castShadow>
         <boxGeometry args={[0.26, 0.12, 0.18]} />
-        <meshStandardMaterial color="#211e2d" roughness={0.75} />
+        <meshStandardMaterial color="#1e1b2a" roughness={0.78} />
       </mesh>
 
-      {/* 2. Lower Torso & Belt */}
-      <mesh position={[0, 0.63, 0]} castShadow>
+      {/* 2. Tapered Explorer Duster Coat & Torso */}
+      {/* Lower Waist Coat with Leather Belt */}
+      <mesh position={[0, 0.65, 0]} castShadow>
         <boxGeometry args={[0.3, 0.14, 0.2]} />
-        <meshStandardMaterial color="#2b273b" roughness={0.7} />
+        <meshStandardMaterial color="#262838" roughness={0.72} />
       </mesh>
-      {/* Leather Field Belt with Brass Buckle */}
-      <mesh position={[0, 0.59, 0.01]} castShadow>
-        <boxGeometry args={[0.31, 0.04, 0.21]} />
-        <meshStandardMaterial color="#3a281c" roughness={0.6} />
+      {/* Leather Field Belt with Brass Hardware */}
+      <mesh position={[0, 0.60, 0.01]} castShadow>
+        <boxGeometry args={[0.31, 0.045, 0.21]} />
+        <meshStandardMaterial color="#382519" roughness={0.65} />
       </mesh>
-      <mesh position={[0, 0.59, 0.118]}>
-        <boxGeometry args={[0.07, 0.05, 0.015]} />
+      <mesh position={[0, 0.60, 0.118]}>
+        <boxGeometry args={[0.065, 0.045, 0.015]} />
         <meshStandardMaterial color="#d97706" metalness={0.85} roughness={0.25} />
       </mesh>
 
-      {/* 3. Upper Torso: Field Duster Coat */}
+      {/* Inverted Tapered Chest / Jacket (Broad shoulders tapering to waist) */}
       <mesh position={[0, 0.82, 0]} castShadow>
-        <boxGeometry args={[0.36, 0.28, 0.22]} />
-        <meshStandardMaterial color="#2b273b" roughness={0.7} />
+        <boxGeometry args={[0.35, 0.26, 0.22]} />
+        <meshStandardMaterial color="#262838" roughness={0.72} />
       </mesh>
 
-      {/* Folded Coat Lapels & Neck Cowl */}
-      <mesh position={[0, 0.94, 0.02]} castShadow>
-        <boxGeometry args={[0.28, 0.1, 0.21]} />
-        <meshStandardMaterial color="#3c3652" roughness={0.75} />
-      </mesh>
-      <mesh position={[0, 0.88, 0.112]} rotation={[0, 0, 0]}>
-        <boxGeometry args={[0.16, 0.16, 0.02]} />
-        <meshStandardMaterial color="#221e30" roughness={0.8} />
+      {/* Folded Coat Collar & High Cowl (Seamless transition to neck/head) */}
+      <mesh position={[0, 0.96, 0.015]} castShadow>
+        <boxGeometry args={[0.27, 0.09, 0.2]} />
+        <meshStandardMaterial color="#35374d" roughness={0.75} />
       </mesh>
 
-      {/* Diagonal Cross-Chest Leather Satchel Strap */}
-      <mesh position={[0, 0.8, 0.02]} rotation={[0, 0, 0.62]}>
-        <boxGeometry args={[0.05, 0.38, 0.23]} />
-        <meshStandardMaterial color="#3a281c" roughness={0.65} />
+      {/* Diagonal Field Satchel Strap across chest */}
+      <mesh position={[0, 0.79, 0.02]} rotation={[0, 0, 0.58]}>
+        <boxGeometry args={[0.048, 0.36, 0.23]} />
+        <meshStandardMaterial color="#382519" roughness={0.65} />
       </mesh>
 
-      {/* 4. Split Dynamic Coat Tails */}
-      <group ref={coatTailsRef} position={[0, 0.5, 0]}>
-        {/* Left coat tail */}
+      {/* 3. Dynamic Split Coat Tails (Pivoting at waist, sways backward during movement) */}
+      <group ref={coatTailsRef} position={[0, 0.53, 0]}>
+        {/* Left coat tail flap */}
         <mesh position={[-0.08, -0.11, -0.01]} castShadow>
-          <boxGeometry args={[0.14, 0.22, 0.2]} />
-          <meshStandardMaterial color="#242033" roughness={0.75} />
+          <boxGeometry args={[0.13, 0.22, 0.2]} />
+          <meshStandardMaterial color="#202230" roughness={0.75} />
         </mesh>
-        {/* Right coat tail */}
+        {/* Right coat tail flap */}
         <mesh position={[0.08, -0.11, -0.01]} castShadow>
-          <boxGeometry args={[0.14, 0.22, 0.2]} />
-          <meshStandardMaterial color="#242033" roughness={0.75} />
+          <boxGeometry args={[0.13, 0.22, 0.2]} />
+          <meshStandardMaterial color="#202230" roughness={0.75} />
         </mesh>
       </group>
 
-      {/* 5. Left Arm & Field Scanner Datapad */}
-      <group ref={leftArmRef} position={[-0.22, 0.93, 0]}>
-        {/* Shoulder Epaulet */}
-        <mesh position={[0, -0.04, 0]} castShadow>
-          <boxGeometry args={[0.11, 0.1, 0.14]} />
-          <meshStandardMaterial color="#332c45" roughness={0.7} />
+      {/* 4. Left Arm with True Shoulder Pivot & Integrated Forearm Datapad */}
+      <group ref={leftArmRef} position={[-0.19, 0.94, 0]}>
+        {/* Shoulder Joint Socket (Pivots seamlessly with zero visible gap) */}
+        <mesh castShadow>
+          <sphereGeometry args={[0.065, 8, 8]} />
+          <meshStandardMaterial color="#2a2c3d" roughness={0.7} />
         </mesh>
-        {/* Upper Arm Sleeve */}
-        <mesh position={[0, -0.16, 0]} castShadow>
-          <boxGeometry args={[0.09, 0.18, 0.11]} />
-          <meshStandardMaterial color="#2b273b" roughness={0.7} />
+        {/* Tapered Coat Sleeve */}
+        <mesh position={[0, -0.2, 0]} castShadow>
+          <boxGeometry args={[0.095, 0.32, 0.11]} />
+          <meshStandardMaterial color="#262838" roughness={0.72} />
         </mesh>
-        {/* Forearm & Cuff */}
-        <mesh position={[0, -0.32, 0.02]} castShadow>
-          <boxGeometry args={[0.085, 0.16, 0.1]} />
-          <meshStandardMaterial color="#221e30" roughness={0.75} />
-        </mesh>
-        {/* Archival Wrist Scanner / Datapad */}
-        <mesh position={[-0.035, -0.31, 0.03]}>
-          <boxGeometry args={[0.03, 0.09, 0.07]} />
+        {/* Forearm Archival Datapad */}
+        <mesh position={[-0.035, -0.24, 0.02]}>
+          <boxGeometry args={[0.025, 0.1, 0.065]} />
           <meshStandardMaterial color="#0f172a" metalness={0.8} roughness={0.3} />
         </mesh>
-        <mesh position={[-0.052, -0.31, 0.03]}>
-          <boxGeometry args={[0.008, 0.06, 0.045]} />
+        {/* Restrained Cyan Datapad Status Light */}
+        <mesh position={[-0.05, -0.24, 0.02]}>
+          <boxGeometry args={[0.006, 0.06, 0.035]} />
           <meshStandardMaterial
             color="#0891b2"
             emissive="#00f0ff"
-            emissiveIntensity={1.1}
+            emissiveIntensity={0.85}
             roughness={0.2}
           />
         </mesh>
         {/* Gloved Hand */}
-        <mesh position={[0, -0.42, 0.03]} castShadow>
+        <mesh position={[0, -0.4, 0.02]} castShadow>
           <boxGeometry args={[0.075, 0.09, 0.08]} />
           <meshStandardMaterial color="#1a1824" roughness={0.8} />
         </mesh>
       </group>
 
-      {/* 6. Right Arm */}
-      <group ref={rightArmRef} position={[0.22, 0.93, 0]}>
-        {/* Shoulder Epaulet */}
-        <mesh position={[0, -0.04, 0]} castShadow>
-          <boxGeometry args={[0.11, 0.1, 0.14]} />
-          <meshStandardMaterial color="#332c45" roughness={0.7} />
+      {/* 5. Right Arm with True Shoulder Pivot */}
+      <group ref={rightArmRef} position={[0.19, 0.94, 0]}>
+        {/* Shoulder Joint Socket */}
+        <mesh castShadow>
+          <sphereGeometry args={[0.065, 8, 8]} />
+          <meshStandardMaterial color="#2a2c3d" roughness={0.7} />
         </mesh>
-        {/* Upper Arm Sleeve */}
-        <mesh position={[0, -0.16, 0]} castShadow>
-          <boxGeometry args={[0.09, 0.18, 0.11]} />
-          <meshStandardMaterial color="#2b273b" roughness={0.7} />
-        </mesh>
-        {/* Forearm & Cuff */}
-        <mesh position={[0, -0.32, 0.02]} castShadow>
-          <boxGeometry args={[0.085, 0.16, 0.1]} />
-          <meshStandardMaterial color="#221e30" roughness={0.75} />
+        {/* Tapered Coat Sleeve */}
+        <mesh position={[0, -0.2, 0]} castShadow>
+          <boxGeometry args={[0.095, 0.32, 0.11]} />
+          <meshStandardMaterial color="#262838" roughness={0.72} />
         </mesh>
         {/* Gloved Hand */}
-        <mesh position={[0, -0.42, 0.03]} castShadow>
+        <mesh position={[0, -0.4, 0.02]} castShadow>
           <boxGeometry args={[0.075, 0.09, 0.08]} />
           <meshStandardMaterial color="#1a1824" roughness={0.8} />
         </mesh>
       </group>
 
-      {/* 7. Explorer Archival Field Pack */}
-      <group position={[0, 0.82, -0.14]}>
-        {/* Main Canvas Pack Body */}
+      {/* 6. Compact Archival Field Satchel on Back */}
+      <group position={[0, 0.81, -0.14]}>
+        {/* Canvas Pack Body */}
         <mesh castShadow>
           <boxGeometry args={[0.25, 0.28, 0.12]} />
-          <meshStandardMaterial color="#1c1926" roughness={0.85} />
+          <meshStandardMaterial color="#1d1b26" roughness={0.85} />
         </mesh>
-        {/* Top Flap */}
-        <mesh position={[0, 0.12, 0.01]} castShadow>
-          <boxGeometry args={[0.26, 0.08, 0.13]} />
-          <meshStandardMaterial color="#2a2338" roughness={0.8} />
+        {/* Rolled Archive Map Cylinder on Top */}
+        <mesh position={[0, 0.17, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
+          <cylinderGeometry args={[0.04, 0.04, 0.26, 8]} />
+          <meshStandardMaterial color="#3e384c" roughness={0.8} />
         </mesh>
-        {/* Rolled Canvas Bedroll / Archive Tube on Top */}
-        <mesh position={[0, 0.18, -0.01]} rotation={[0, 0, Math.PI / 2]} castShadow>
-          <cylinderGeometry args={[0.042, 0.042, 0.27, 8]} />
-          <meshStandardMaterial color="#3f374e" roughness={0.8} />
-        </mesh>
-        {/* Brass Buckle Accents */}
-        {[-0.06, 0.06].map((xPos, idx) => (
-          <mesh key={`buckle-${idx}`} position={[xPos, 0.04, -0.065]}>
-            <boxGeometry args={[0.035, 0.045, 0.01]} />
-            <meshStandardMaterial color="#d97706" metalness={0.85} roughness={0.25} />
-          </mesh>
-        ))}
       </group>
 
-      {/* 8. Stylized Head, Neck & Explorer Visor */}
-      {/* Sleek Neck */}
+      {/* 7. Stylized Faceted Explorer Head, Cowl & Forward-Facing Cyan Visor */}
+      {/* Neck Stem */}
       <mesh position={[0, 1.02, 0]} castShadow>
-        <cylinderGeometry args={[0.065, 0.075, 0.09, 8]} />
+        <cylinderGeometry args={[0.065, 0.075, 0.08, 8]} />
         <meshStandardMaterial color="#221e30" roughness={0.8} />
       </mesh>
-      {/* Faceted Head */}
+      {/* Faceted Head Core */}
       <mesh position={[0, 1.15, 0]} castShadow>
         <boxGeometry args={[0.2, 0.22, 0.2]} />
-        <meshStandardMaterial color="#dfd7c8" roughness={0.65} />
+        <meshStandardMaterial color="#ded7c8" roughness={0.65} />
       </mesh>
       {/* Stylized Explorer Cowl / Hood */}
-      <mesh position={[0, 1.22, -0.02]} castShadow>
-        <boxGeometry args={[0.22, 0.14, 0.22]} />
-        <meshStandardMaterial color="#1e1a2b" roughness={0.75} />
+      <mesh position={[0, 1.22, -0.015]} castShadow>
+        <boxGeometry args={[0.22, 0.13, 0.22]} />
+        <meshStandardMaterial color="#1c1926" roughness={0.75} />
       </mesh>
-      {/* Low-Poly Retro Cyan Visor */}
+      {/* Restrained Forward-Facing Cyan Visor Band (+Z local face) */}
       <mesh position={[0, 1.15, 0.106]}>
         <boxGeometry args={[0.18, 0.048, 0.02]} />
         <meshStandardMaterial
           color="#06b6d4"
           emissive="#00f0ff"
-          emissiveIntensity={0.9}
+          emissiveIntensity={0.85}
           roughness={0.15}
         />
       </mesh>
 
-      {/* 9. Left Leg, Knee Joint & Contoured Field Boot */}
-      <group ref={leftLegRef} position={[-0.09, 0.47, 0]}>
-        {/* Tapered Thigh Trouser */}
-        <mesh position={[0, -0.13, 0]} castShadow>
-          <boxGeometry args={[0.11, 0.26, 0.12]} />
-          <meshStandardMaterial color="#1e1b29" roughness={0.8} />
+      {/* 8. Left Leg with True Hip Pivot & Contoured Field Boot */}
+      <group ref={leftLegRef} position={[-0.09, 0.49, 0]}>
+        {/* Hip Joint Socket Ball */}
+        <mesh castShadow>
+          <sphereGeometry args={[0.06, 8, 8]} />
+          <meshStandardMaterial color="#1a1824" roughness={0.8} />
         </mesh>
-        {/* Knee Joint Fabric Patch */}
-        <mesh position={[0, -0.27, 0.01]} castShadow>
-          <boxGeometry args={[0.105, 0.06, 0.115]} />
-          <meshStandardMaterial color="#282336" roughness={0.75} />
+        {/* Tapered Trouser Thigh */}
+        <mesh position={[0, -0.16, 0]} castShadow>
+          <boxGeometry args={[0.11, 0.28, 0.12]} />
+          <meshStandardMaterial color="#1a1824" roughness={0.8} />
         </mesh>
-        {/* Lower Leg Boot Shaft */}
-        <mesh position={[0, -0.36, 0.01]} castShadow>
-          <boxGeometry args={[0.1, 0.14, 0.12]} />
-          <meshStandardMaterial color="#16131f" roughness={0.7} />
-        </mesh>
-        {/* Contoured Leather Boot & Sole */}
-        <mesh position={[0, -0.44, 0.03]} castShadow>
-          <boxGeometry args={[0.105, 0.08, 0.17]} />
+        {/* Contoured Leather Field Boot & Sole */}
+        <mesh position={[0, -0.38, 0.025]} castShadow>
+          <boxGeometry args={[0.105, 0.16, 0.17]} />
           <meshStandardMaterial color="#120f1a" roughness={0.65} />
         </mesh>
       </group>
 
-      {/* 10. Right Leg, Knee Joint & Contoured Field Boot */}
-      <group ref={rightLegRef} position={[0.09, 0.47, 0]}>
-        {/* Tapered Thigh Trouser */}
-        <mesh position={[0, -0.13, 0]} castShadow>
-          <boxGeometry args={[0.11, 0.26, 0.12]} />
-          <meshStandardMaterial color="#1e1b29" roughness={0.8} />
+      {/* 9. Right Leg with True Hip Pivot & Contoured Field Boot */}
+      <group ref={rightLegRef} position={[0.09, 0.49, 0]}>
+        {/* Hip Joint Socket Ball */}
+        <mesh castShadow>
+          <sphereGeometry args={[0.06, 8, 8]} />
+          <meshStandardMaterial color="#1a1824" roughness={0.8} />
         </mesh>
-        {/* Knee Joint Fabric Patch */}
-        <mesh position={[0, -0.27, 0.01]} castShadow>
-          <boxGeometry args={[0.105, 0.06, 0.115]} />
-          <meshStandardMaterial color="#282336" roughness={0.75} />
+        {/* Tapered Trouser Thigh */}
+        <mesh position={[0, -0.16, 0]} castShadow>
+          <boxGeometry args={[0.11, 0.28, 0.12]} />
+          <meshStandardMaterial color="#1a1824" roughness={0.8} />
         </mesh>
-        {/* Lower Leg Boot Shaft */}
-        <mesh position={[0, -0.36, 0.01]} castShadow>
-          <boxGeometry args={[0.1, 0.14, 0.12]} />
-          <meshStandardMaterial color="#16131f" roughness={0.7} />
-        </mesh>
-        {/* Contoured Leather Boot & Sole */}
-        <mesh position={[0, -0.44, 0.03]} castShadow>
-          <boxGeometry args={[0.105, 0.08, 0.17]} />
+        {/* Contoured Leather Field Boot & Sole */}
+        <mesh position={[0, -0.38, 0.025]} castShadow>
+          <boxGeometry args={[0.105, 0.16, 0.17]} />
           <meshStandardMaterial color="#120f1a" roughness={0.65} />
         </mesh>
       </group>
 
-      {/* 11. Soft Contact Ground AO Shadow Decal */}
+      {/* 10. Soft Contact Ground AO Shadow Decal */}
       <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.32, 16]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.38} />
